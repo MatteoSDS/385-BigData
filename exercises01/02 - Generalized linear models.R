@@ -14,18 +14,23 @@ gradient_negloglik<-function(m,y,X,beta){
   return(grad)
 }
 
-gradient_descent<-function(m,y,X,beta0,stepsize,maxstepnumber,accuracy){
+gradient_descent<-function(m,y,X,beta0,stepsize,maxstepnumber,
+                           accuracy_obj_fun,accuracy_beta_val){
   negloglik<-numeric(maxstepnumber)
   negloglik[1]<-negloglikelihood(m,y,X,beta0)
   gradient<-gradient_negloglik(m,y,X,beta0)
-  difference<-accuracy+1
+  diff_beta_val<-accuracy_beta_val+1
+  diff_obj_fun<-accuracy_obj_fun+1
   i<-1
-  while(!(i==maxstepnumber)&&(accuracy<difference)){
+  while(!(i==maxstepnumber)&&
+        ((accuracy_beta_val<diff_beta_val)||
+        (accuracy_obj_fun<diff_obj_fun))){
     i<-i+1
     beta1<-beta0-stepsize*gradient
-    difference<-sum(abs(beta0-beta1))
+    diff_beta_val<-sum(abs(beta0-beta1))
     beta0<-beta1
     negloglik[i]<-negloglikelihood(m,y,X,beta0)
+    diff_obj_fun<-negloglik[i-1]-negloglik[i]
     gradient<-gradient_negloglik(m,y,X,beta0)
   }
   return(list(betahat=beta0,negloglik=negloglik,step=i))
@@ -40,8 +45,10 @@ m<-rep(1,569)
 beta0<-rep(0,11)
 stepsize<-2/10^8
 maxstepnumber<-10000
-accuracy<-0.00001
-result_grad_desc<-gradient_descent(m,y,X,beta0,stepsize,maxstepnumber,accuracy)
+accuracy_obj_fun<-0.001
+accuracy_beta_val<-0.00001
+result_grad_desc<-gradient_descent(m,y,X,beta0,stepsize,maxstepnumber,
+                                   accuracy_obj_fun,accuracy_beta_val)
 
 result_grad_desc$betahat
 plot(result_grad_desc$negloglik[1:result_grad_desc$step],
@@ -55,28 +62,34 @@ hessian_negloglik<-function(m,y,X,beta){
   return(hes)
 }
 
-newton_descent<-function(m,y,X,beta0,maxstepnumber,accuracy){
+newton_descent<-function(m,y,X,beta0,maxstepnumber,
+                         accuracy_obj_fun,accuracy_beta_val){
   negloglik<-numeric(maxstepnumber)
   negloglik[1]<-negloglikelihood(m,y,X,beta0)
   gradient<-gradient_negloglik(m,y,X,beta0)
   hessian<-hessian_negloglik(m,y,X,beta0)
-  difference<-accuracy+1
+  diff_beta_val<-accuracy_beta_val+1
+  diff_obj_fun<-accuracy_obj_fun+1
   i<-1
-  while(!(i==maxstepnumber)&&(accuracy<difference)){
+  while(!(i==maxstepnumber)&&
+        ((accuracy_beta_val<diff_beta_val)||
+        (accuracy_obj_fun<diff_obj_fun))){
     i<-i+1
     beta1<-beta0-solve(hessian,gradient)
-    difference<-sum(abs(beta0-beta1))
+    diff_beta_val<-sum(abs(beta0-beta1))
     beta0<-beta1
     negloglik[i]<-negloglikelihood(m,y,X,beta0)
+    diff_obj_fun<-negloglik[i-1]-negloglik[i]
     gradient<-gradient_negloglik(m,y,X,beta0)
     hessian<-hessian_negloglik(m,y,X,beta0)
   }
   return(list(betahat=beta0,negloglik=negloglik,step=i))
 }
 
-result_newton_desc<-newton_descent(m,y,X,beta0,maxstepnumber,accuracy)
+result_newton_desc<-newton_descent(m,y,X,beta0,maxstepnumber,
+                                   accuracy_obj_fun,accuracy_beta_val)
 
-result_grad_desc$betahat
+result_newton_desc$betahat
 plot(result_newton_desc$negloglik[1:result_newton_desc$step],
      main = "Negative Log-likelihood at each step",
      xlab="Step",ylab="negloglik",type="l")

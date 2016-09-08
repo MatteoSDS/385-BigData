@@ -71,17 +71,17 @@ The gradient descent updates at each step the values of our estimated $\beta$ us
 with $a$ being the step size. Running the code in appendix, we can obtain the following $\hat{\beta}$:\\
 
 \begin{tabular}{ll}
-c		    &-0.0035100566\\
-V3          &-0.0246244308\\
-V4          &-0.0146632623\\
-V5          &-0.1287157063\\
-V6          & 0.0190177752\\
-V7          &-0.0001249631\\
-V8          & 0.0005526005\\
-V9          & 0.0010221945\\
-V10         & 0.0004504115\\
-V11         &-0.0002718301\\
-V12         &-0.0001462899
+c			&-0.0033014219\\
+V3          &-0.0231821340\\
+V4          &-0.0174151223\\
+V5          &-0.1233097211\\
+V6          & 0.0182791149\\
+V7          &-0.0001358173\\
+V8          & 0.0004527453\\
+V9          & 0.0008734747\\
+V10         & 0.0003869764\\
+V11         &-0.0002857808\\
+V12         &-0.0001459426
 \end{tabular}\\
 
 The following graph of the objective function shows us that indeed it's being decreased at each step.
@@ -99,7 +99,7 @@ The Hessian is:
 				 &=\begin{bmatrix} \sum_{i=1}^N m_i x_{i1}x_{i1}w_i(1-w_i) & \cdots & \sum_{i=1}^N m_i x_{i1}x_{iP}w_i(1-w_i) \\ \vdots & \ddots & \vdots \\ \sum_{i=1}^N m_i x_{iP}x_{i1}w_i(1-w_i) & \cdots & \sum_{i=1}^N m_i x_{iP}x_{iP}w_i(1-w_i) \end{bmatrix}=X^TDX
 \end{align*}\\
 
-where $D$ is a diagonal matrix with $ii$-th element $m_i w_i (1-w_i)$. Then, considering that we can ignore the constant values adding and subtracting them as we need, we can obtain the requested result like this:
+where $D$ is a diagonal matrix with $ii$-th element $m_i w_i (1-w_i)$. Notice that all the values on the diagonal are positive: this means that the Hessian is defined positive and that our objective function is convex. Then, considering that we can ignore the constant values adding and subtracting them as we need, we can obtain the requested result like this:
 
 \begin{align*}
 q_l(\beta,\beta_0)&=l(\beta_0)+\nabla(\beta_0)^T(\beta-\beta_0)+\frac{1}{2}(\beta-\beta_0)^t\nabla^2(\beta_0)(\beta-\beta_0)\\
@@ -126,17 +126,17 @@ The newton's method updates at each step the values of our estimated $\beta$ usi
 Running the code in appendix, we can obtain the following $\hat{\beta}$:\\
 
 \begin{tabular}{ll}
-c           &-0.0028183932\\
-V3          &-0.0198393341\\
-V4          &-0.0213693672\\
-V5          &-0.1092486557\\
-V6          & 0.0162758326\\
-V7          &-0.0001475889\\
-V8          & 0.0002700320\\
-V9          & 0.0005926614\\
-V10         & 0.0002666690\\
-V11         &-0.0002962445\\
-V12         &-0.0001390434
+c			 &-7.35951761\\
+V3           &-2.04930490\\
+V4           & 0.38473434\\
+V5           &-0.07151042\\
+V6           & 0.03979620\\
+V7           &76.43227376\\
+V8           &-1.46242225\\
+V9           & 8.46869976\\
+V10          &66.82175685\\
+V11          &16.27824232\\
+V12          &-68.33702689
 \end{tabular}\\
 
 The following graph of the objective function shows us that indeed it's being decreased at each step.
@@ -162,18 +162,23 @@ gradient_negloglik<-function(m,y,X,beta){
   return(grad)
 }
 
-gradient_descent<-function(m,y,X,beta0,stepsize,maxstepnumber,accuracy){
+gradient_descent<-function(m,y,X,beta0,stepsize,maxstepnumber,
+                           accuracy_obj_fun,accuracy_beta_val){
   negloglik<-numeric(maxstepnumber)
   negloglik[1]<-negloglikelihood(m,y,X,beta0)
   gradient<-gradient_negloglik(m,y,X,beta0)
-  difference<-accuracy+1
+  diff_beta_val<-accuracy_beta_val+1
+  diff_obj_fun<-accuracy_obj_fun+1
   i<-1
-  while(!(i==maxstepnumber)&&(accuracy<difference)){
+  while(!(i==maxstepnumber)&&
+        ((accuracy_beta_val<diff_beta_val)||
+        (accuracy_obj_fun<diff_obj_fun))){
     i<-i+1
     beta1<-beta0-stepsize*gradient
-    difference<-sum(abs(beta0-beta1))
+    diff_beta_val<-sum(abs(beta0-beta1))
     beta0<-beta1
     negloglik[i]<-negloglikelihood(m,y,X,beta0)
+    diff_obj_fun<-negloglik[i-1]-negloglik[i]
     gradient<-gradient_negloglik(m,y,X,beta0)
   }
   return(list(betahat=beta0,negloglik=negloglik,step=i))
@@ -188,8 +193,10 @@ m<-rep(1,569)
 beta0<-rep(0,11)
 stepsize<-2/10^8
 maxstepnumber<-10000
-accuracy<-0.00001
-result_grad_desc<-gradient_descent(m,y,X,beta0,stepsize,maxstepnumber,accuracy)
+accuracy_obj_fun<-0.001
+accuracy_beta_val<-0.00001
+result_grad_desc<-gradient_descent(m,y,X,beta0,stepsize,maxstepnumber,
+                                   accuracy_obj_fun,accuracy_beta_val)
 
 result_grad_desc$betahat
 plot(result_grad_desc$negloglik[1:result_grad_desc$step],
@@ -203,28 +210,34 @@ hessian_negloglik<-function(m,y,X,beta){
   return(hes)
 }
 
-newton_descent<-function(m,y,X,beta0,maxstepnumber,accuracy){
+newton_descent<-function(m,y,X,beta0,maxstepnumber,
+                         accuracy_obj_fun,accuracy_beta_val){
   negloglik<-numeric(maxstepnumber)
   negloglik[1]<-negloglikelihood(m,y,X,beta0)
   gradient<-gradient_negloglik(m,y,X,beta0)
   hessian<-hessian_negloglik(m,y,X,beta0)
-  difference<-accuracy+1
+  diff_beta_val<-accuracy_beta_val+1
+  diff_obj_fun<-accuracy_obj_fun+1
   i<-1
-  while(!(i==maxstepnumber)&&(accuracy<difference)){
+  while(!(i==maxstepnumber)&&
+        ((accuracy_beta_val<diff_beta_val)||
+        (accuracy_obj_fun<diff_obj_fun))){
     i<-i+1
     beta1<-beta0-solve(hessian,gradient)
-    difference<-sum(abs(beta0-beta1))
+    diff_beta_val<-sum(abs(beta0-beta1))
     beta0<-beta1
     negloglik[i]<-negloglikelihood(m,y,X,beta0)
+    diff_obj_fun<-negloglik[i-1]-negloglik[i]
     gradient<-gradient_negloglik(m,y,X,beta0)
     hessian<-hessian_negloglik(m,y,X,beta0)
   }
   return(list(betahat=beta0,negloglik=negloglik,step=i))
 }
 
-result_newton_desc<-newton_descent(m,y,X,beta0,maxstepnumber,accuracy)
+result_newton_desc<-newton_descent(m,y,X,beta0,maxstepnumber,
+                                   accuracy_obj_fun,accuracy_beta_val)
 
-result_grad_desc$betahat
+result_newton_desc$betahat
 plot(result_newton_desc$negloglik[1:result_newton_desc$step],
      main = "Negative Log-likelihood at each step",
      xlab="Step",ylab="negloglik",type="l")
