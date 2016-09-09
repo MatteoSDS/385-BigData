@@ -37,23 +37,23 @@ gradient_descent<-function(m,y,X,beta0,stepsize,maxstepnumber,
 }
 
 data_wdbc<-read.csv("./wdbc.csv", header=FALSE)
-X<-as.matrix(cbind(rep(1,569),data_wdbc[,3:12]))
+X<-as.matrix(cbind(rep(1,569),scale(data_wdbc[,3:12])))
 y<-data_wdbc[,2]
 y<-as.numeric(y=="M")
 m<-rep(1,569)
 
 beta0<-rep(0,11)
-stepsize<-2/10^8
+stepsize<-0.02
 maxstepnumber<-10000
 accuracy_obj_fun<-0.001
-accuracy_beta_val<-0.00001
+accuracy_beta_val<-0.001
 result_grad_desc<-gradient_descent(m,y,X,beta0,stepsize,maxstepnumber,
                                    accuracy_obj_fun,accuracy_beta_val)
 
 result_grad_desc$betahat
 plot(result_grad_desc$negloglik[1:result_grad_desc$step],
      main = "Negative Log-likelihood at each step",
-     xlab="Step",ylab="negloglik",type="l")
+     xlab="Step",ylab="negloglik",type="l",log="xy")
 
 hessian_negloglik<-function(m,y,X,beta){
   w<-as.vector(1/(1+exp(-X%*%beta)))

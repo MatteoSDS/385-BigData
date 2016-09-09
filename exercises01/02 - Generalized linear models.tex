@@ -71,17 +71,17 @@ The gradient descent updates at each step the values of our estimated $\beta$ us
 with $a$ being the step size. Running the code in appendix, we can obtain the following $\hat{\beta}$:\\
 
 \begin{tabular}{ll}
-c			&-0.0033014219\\
-V3          &-0.0231821340\\
-V4          &-0.0174151223\\
-V5          &-0.1233097211\\
-V6          & 0.0182791149\\
-V7          &-0.0001358173\\
-V8          & 0.0004527453\\
-V9          & 0.0008734747\\
-V10         & 0.0003869764\\
-V11         &-0.0002857808\\
-V12         &-0.0001459426
+c   & 0.352797332\\
+V3  &-4.036418435\\
+V4  & 1.650240487\\
+V5  &-3.813750020\\
+V6  &12.587370606\\
+V7  & 1.051996544\\
+V8  &-0.005401012\\
+V9  & 0.729982621\\
+V10 & 2.582549729\\
+V11 & 0.444998302\\
+V12 &-0.463949952
 \end{tabular}\\
 
 The following graph of the objective function shows us that indeed it's being decreased at each step.
@@ -126,22 +126,28 @@ The newton's method updates at each step the values of our estimated $\beta$ usi
 Running the code in appendix, we can obtain the following $\hat{\beta}$:\\
 
 \begin{tabular}{ll}
-c			 &-7.35951761\\
-V3           &-2.04930490\\
-V4           & 0.38473434\\
-V5           &-0.07151042\\
-V6           & 0.03979620\\
-V7           &76.43227376\\
-V8           &-1.46242225\\
-V9           & 8.46869976\\
-V10          &66.82175685\\
-V11          &16.27824232\\
-V12          &-68.33702689
+c   & 0.48701675\\
+V3  &-7.22185053\\
+V4  & 1.65475615\\
+V5  &-1.73763027\\
+V6  &14.00484560\\
+V7  & 1.07495329\\
+V8  &-0.07723455\\
+V9  & 0.67512313\\
+V10 & 2.59287426\\
+V11 & 0.44625631\\
+V12 &-0.48248420
 \end{tabular}\\
 
 The following graph of the objective function shows us that indeed it's being decreased at each step.
 
 \includegraphics[width=\textwidth]{Rplot_newton.png}
+
+\subsubsection*{E)}
+
+Newton's method reached convergence in eleven steps, instead the gradient descent required more than 5000 steps using the same requirements accuracy-wise. This happened because Newton's method is known to fare better if the objective function can be well approximated using a quadratic function, and indeed in point C) we proved that it's true for our case. Specifically Newton's method exploits the additional information that comes from the curvature of the function to take steps in a direction that is not the steepest but that it's more convenient looking at the whole optimization process. Nonetheless in other cases it could be more advantageous to use the gradient descent because each step of Newton's method requires the inversion of the Hessian matrix, and that is a very expensive operation.
+
+\newpage
 
 \subsubsection*{CODE)}
 
