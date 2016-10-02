@@ -39,8 +39,8 @@ gradient_descent<-function(m,y,X,beta0,stepsize,maxstepnumber,
 
 line_search<-function(alpha,c1,rho,gradient,m,y,X,beta){
   while(negloglikelihood(m,y,X,(beta-alpha*gradient))>
-        negloglikelihood(m,y,X,beta)+c1*alpha*crossprod(gradient))
-        alpha<-alpha*rho
+        negloglikelihood(m,y,X,beta)-c1*alpha*crossprod(gradient))
+     alpha<-alpha*rho
   return(alpha)
 }
 
