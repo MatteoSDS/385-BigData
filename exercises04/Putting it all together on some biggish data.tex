@@ -1,3 +1,72 @@
+\documentclass{article}
+\usepackage{amsmath}
+
+\usepackage{graphicx}
+
+\usepackage{listings}
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{frame=tb,
+  language=R,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=false,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\title{SDS385 Fall '16: Statistical Models For Big Data\\Exercises 04 - Putting it all together\\on some biggish data}
+\author{Matteo Vestrucci}
+\date{October 3rd 2016}
+\begin{document}
+\maketitle
+\bigskip\bigskip\bigskip
+
+\subsubsection*{A)}
+
+Running the code in appendix, we can observe how all the different features we presented for the stochastic gradient descent can speed up the algorithm. The first implementation of AdaGrad in R uses only the sparse matrices trick: it runs on my laptop through all the training dataset in 42 seconds, with a prediction error on the test data of 1.11\%.
+
+\includegraphics[width=\textwidth]{Rplot_biggish01.png}
+
+In the second implementation I added also the $L^2$ norm penalization for the covariates. It scales on $\lambda$ and to choose it I coded a cross-validation based on a partition of ten pieces of the training set. To cross-validate the values of $\lambda$, the algorithm leaves out one of the ten splits of the training dataset at each iteration to estimate the error. Notice that the values here refer to $1-\lambda$.
+
+\includegraphics[width=\textwidth]{Rplot_biggish02.png}
+
+\begin{center}
+\begin{tabular}{ll}
+lambda     &error\\
+0.9900000  &4.64\\
+0.9950000  &4.52\\
+0.9990000  &4.25\\
+0.9995000  &4.15\\
+0.9999000  &3.99\\
+0.9999500  &3.95\\
+0.9999900  &5.77\\
+0.9999950  &7.04\\
+0.9999990  &4.72\\
+0.9999995  &3.16\\
+0.9999999  &2.15
+\end{tabular}
+\end{center}
+
+Interestingly the resulting plot suggests that we shouldn't apply any penalization. Finally the third implementation uses $\lambda=0$ and is coded in C++. The error rate is still 1.11\% because the algorithm is deterministic, but it runs considerably faster on my laptop: one full passage on the training dataset takes only 9 seconds.
+
+\newpage
+
+\subsubsection*{CODE)}
+
+%[basicstyle=\tiny]
+\begin{lstlisting}
 library(Matrix)
 library(microbenchmark)
 library(Rcpp)
@@ -26,7 +95,6 @@ AdaGrad_biggish<-function(y,X_dim,X_p,X_j,X_x,alpha0,beta0,stepsize,ada_eps){
   for(i in 1:n){
     j_start<-X_p[i]+1
     j_end<-X_p[i+1]
-    #if(!(j_start>j_end)){
     active_Xs<-X_j[j_start:j_end]+1
     values_Xs<-X_x[j_start:j_end]
     value_y<-y[i]
@@ -40,11 +108,8 @@ AdaGrad_biggish<-function(y,X_dim,X_p,X_j,X_x,alpha0,beta0,stepsize,ada_eps){
     gradient<-values_Xs*grad_const
     new_diag_G<-diag_G[active_Xs]+gradient^2
     diag_G[active_Xs]<-new_diag_G
-    beta0[active_Xs]<-values_beta-stepsize/sqrt(new_diag_G)*gradient
-    #}
-  }
-  return(list(alphahat=alpha0,betahat=beta0,unit_negloglik=unit_negloglik))
-}
+    beta0[active_Xs]<-values_beta-stepsize/sqrt(new_diag_G)*gradient}
+  return(list(alphahat=alpha0,betahat=beta0,unit_negloglik=unit_negloglik))}
 
 X_dim<-readRDS("url_X_training_dim.rds")
 X_p<-readRDS("url_X_training_p.rds")
@@ -82,8 +147,7 @@ plot(res_adagrad_biggish$unit_negloglik[(X_dim[1]-5000):(X_dim[1])],
 
 update_exp_avg<-function(old,new,w){
   result<-old*w+new*(1-w)
-  return(result)
-}
+  return(result)}
 
 exp_avg_biggish<-res_adagrad_biggish$unit_negloglik
 exp_avg_biggish[exp_avg_biggish==Inf]<-1000
@@ -99,8 +163,7 @@ plot(exp_avg_biggish,
 
 update_run_avg<-function(old,new,w){
   result<-(old*(w-1)+new)/w
-  return(result)
-}
+  return(result)}
 
 running_avg_biggish<-res_adagrad_biggish$unit_negloglik
 running_avg_biggish[running_avg_biggish==Inf]<-1000
@@ -155,8 +218,7 @@ AdaGrad_cv<-function(nsplits,lambda,y,X_dim,X_p,X_j,X_x,alpha_init,beta_init,ste
       gradient<-values_Xs*grad_const
       new_diag_G<-diag_G[active_Xs]+gradient^2
       diag_G[active_Xs]<-new_diag_G
-      beta0[active_Xs]<-lambda*values_beta-stepsize/sqrt(new_diag_G)*gradient
-    }
+      beta0[active_Xs]<-lambda*values_beta-stepsize/sqrt(new_diag_G)*gradient}
     delayed_pena<-i-when_active
     values_beta<-beta0*lambda^delayed_pena
     predictions<-numeric(ntest)
@@ -167,13 +229,10 @@ AdaGrad_cv<-function(nsplits,lambda,y,X_dim,X_p,X_j,X_x,alpha_init,beta_init,ste
       active_Xs<-X_j[j_start:j_end]+1
       values_Xs<-X_x[j_start:j_end]
       alphaXbeta<-alpha0+values_Xs%*%beta0[active_Xs]
-      predictions[i]<-(1/(1+exp(-alphaXbeta))>0.5)
-    }
+      predictions[i]<-(1/(1+exp(-alphaXbeta))>0.5)}
     error<-sum((y[test]-predictions)^2)/ntest*100
-    splits_errors[h]<-error
-  }
-  return(splits_errors)
-}
+    splits_errors[h]<-error}
+  return(splits_errors)}
 
 temp<-date()
 lambda_cv<-c(0.99,0.995,0.999,0.9995,0.9999,0.99995,0.99999,0.999995,0.999999,0.9999995,0.9999999)
@@ -183,29 +242,17 @@ errors<-matrix(NA,nrow=nlambda,ncol=nsplits)
 colnames(errors)<-paste("split",1:nsplits)
 rownames(errors)<-paste(lambda_cv)
 for(i in 1:nlambda){
-  errors[i,]<-AdaGrad_cv(nsplits,lambda_cv[i],y,X_dim,X_p,X_j,X_x,alpha0,beta0,stepsize,ada_eps)
-}
+  errors[i,]<-AdaGrad_cv(nsplits,lambda_cv[i],y,X_dim,X_p,X_j,X_x,alpha0,beta0,stepsize,ada_eps)}
 temp;date()
 
-#saveRDS(errors,file="errors.rds")
-#errors<-readRDS("errors.rds")
 boxplot(t(errors),main="Cross validation for lambda",
         xlab="lambda",ylab="Error %")
-#         lambda error
-# [1,] 0.9900000  4.64
-# [2,] 0.9950000  4.52
-# [3,] 0.9990000  4.25
-# [4,] 0.9995000  4.15
-# [5,] 0.9999000  3.99
-# [6,] 0.9999500  3.95
-# [7,] 0.9999900  5.77
-# [8,] 0.9999950  7.04
-# [9,] 0.9999990  4.72
-#[10,] 0.9999995  3.16
-#[11,] 0.9999999  2.15
 
 sourceCpp(file="cpp_functions.cpp")
 
 temp<-date()
 res_adagrad_biggish_cpp<-AdaGrad_biggish_cpp(y,X_dim,X_p,X_j,X_x,alpha0,beta0,stepsize,ada_eps)
 temp;date()
+\end{lstlisting}
+
+\end{document}
